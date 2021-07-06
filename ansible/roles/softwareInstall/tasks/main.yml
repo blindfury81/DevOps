@@ -1,0 +1,27 @@
+---
+  - name: Determine if the software is already installed
+    stat:
+      path: '{{ baseDirectory }}/{{ softwareBinary }}'
+    register: softwareDirectory
+
+  - name: Unarchive the software to the server.
+    unarchive:
+      src:   /opt/swDepot/{{ softwareArchive }}
+      dest:  '{{ baseDirectory }}'
+      owner: '{{ owner }}'
+      group: '{{ group }}'
+      mode: '0750'
+    when: not softwareDirectory.stat.exists
+
+  - name: Set folder permissions on the software root directory.
+    shell:  chown {{ owner }}:{{ group }} {{ baseDirectory }}/{{ softwareBinary }}
+
+  - name:  Update the software link.
+    file:
+      src:   "{{ baseDirectory }}/{{ softwareBinary }}"
+      dest:  "{{ baseDirectory }}/{{ softwareSelection }}"
+      state: link
+      owner: '{{ owner }}'
+      group: '{{ group }}'
+      mode: '0750'
+      remote_src: true

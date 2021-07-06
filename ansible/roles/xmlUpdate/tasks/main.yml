@@ -1,0 +1,33 @@
+---
+  - name:  Backup the files.
+    shell:  cp -p "{{ item.fileName }}" "{{ item.fileName }}.`date +%Y-%m-%d\@%H:%M:%S`~" || true
+    with_items:
+    -  "{{ xmlFiles }}"
+
+  - name:  Create files from remote source
+    copy:
+      src:         "{{ item.copyFrom }}"
+      dest:        "{{ item.fileName }}"
+      remote_src:  true
+    with_items:
+    -  "{{ xmlFiles }}"
+    when:  item.copyFrom is defined
+
+  - name:  Create files from template
+    template:
+      src:         "{{ softwareSelection }}/{{ item.templateName }}"
+      dest:        "{{ item.fileName }}"
+    with_items:
+    -  "{{ xmlFiles }}"
+    when:  item.templateName is defined
+
+  - name:  Update the XML files
+    xml:
+      path:       '{{ item.0.fileName }}'
+      xpath:      '{{ item.1.xpath }}'
+      attribute:  '{{ item.1.attribute }}'
+      value:      '{{ item.1.value }}'
+      ensure:     present
+    with_subelements:
+    -  "{{ xmlFiles }}"
+    -  Values

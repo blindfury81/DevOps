@@ -1,0 +1,52 @@
+---
+softwareDescription:  'Apache Tomcat'
+owner:            'tomcat'
+group:            'tomcat'
+
+downloadUrl:      'http://mirror.nodesdirect.com/apache/tomcat/tomcat-8/v8.5.68/bin/apache-tomcat-8.5.68.tar.gz'
+softwareArchive:  "{{ downloadUrl | regex_replace('.*/', '') }}"
+softwareBinary:   "{{ softwareArchive | regex_replace('.tar.gz', '') | regex_replace('.tgz', '') }}"
+useProxy:         true
+baseDirectory:    '/opt'
+
+#######################################
+##  firewalld service file options.  ##
+firewalld:
+  zone:       'work'
+  shortDesc:  '{{ softwareDescription }}'
+  longDesc:   '{{ softwareDescription }}'
+  ports:
+  -  '8080'
+  -  '8084'
+
+####################################
+##  systemd service file options. ##
+systemd:
+  serviceName:  '{{ softwareSelection }}.service'
+  sections:
+  - section: 'Unit'
+    values:
+    - option: 'Description'
+      value:  '{{ softwareDescription }}'
+  - section: 'Service'
+    values:
+    - option: 'User'
+      value:  '{{ owner }}'
+    - option: 'Group'
+      value:  '{{ group }}'
+    - option: 'ExecStart'
+      value:  '{{ baseDirectory }}/{{ softwareSelection }}/bin/catalina.sh run'
+  - section: 'Install'
+    values:
+    - option: 'Alias'
+      value:  '{{ softwareSelection }}'
+
+#####################################
+##  Property Files to be updated.  ##
+xmlFiles:
+- fileName:  '{{ baseDirectory }}/{{ softwareBinary }}/conf/tomcat-users.xml'
+  templateName:  'tomcat-users.xml'
+  Values:
+  - xpath:  '/tomcat-users/user'
+    attribute:  'password'
+    value:     'tomcat_password'

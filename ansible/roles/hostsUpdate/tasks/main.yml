@@ -1,0 +1,24 @@
+---
+  - name:  Backup the /etc/hosts file
+    shell:  cp -p /etc/hosts /etc/hosts.`date +%Y-%m-%d\@%H:%M:%S`~
+
+  - name:  Show the IP Address.
+    debug:
+      msg:  "System {{ inventory_hostname }} has gateway {{ ansible_default_ipv4.gateway }} and address {{ ansible_default_ipv4.address }}"
+
+  -  name:  Clear the /etc/hosts file.
+     shell: |
+       echo "{{ ansible_default_ipv4.address }}  `hostname -s`  `hostname`"  >  /etc/hosts
+       chmod  644  /etc/hosts
+
+  - name:  Enable the localhost.
+    lineinfile:
+      dest:   /etc/hosts
+      line:   '127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4'
+      state:  present
+
+  - name:  Add the final line to the localhost file.
+    lineinfile:
+      dest:   /etc/hosts
+      line:   '::1         localhost localhost.localdomain localhost6 localhost6.localdomain6'
+      state:  present

@@ -1,0 +1,31 @@
+---
+  - name: Start the firewalld service.
+    systemd:
+      name: firewalld
+      state: started
+
+  - name:  Remove the existing service file.
+    file:
+      path:  /etc/firewalld/services/{{ softwareSelection }}.xml
+      state:  absent
+
+  - name: Create the firewalld service
+    shell: |
+      firewall-cmd --permanent --new-service={{ softwareSelection }}
+      firewall-cmd --permanent --service={{ softwareSelection }} --set-description="{{ firewalld.shortDesc }}"
+      firewall-cmd --permanent --service={{ softwareSelection }} --set-short="{{ softwareSelection }}"
+      firewall-cmd --permanent --zone={{ firewalld.zone }} --add-service={{ softwareSelection }}
+  
+  - name: Pause to ensure service file is reloaded before adding ports
+    pause:
+      seconds: 5
+  
+  - name: Add ports to the service.
+    shell:  |
+      firewall-cmd --permanent --service={{ softwareSelection }} --add-port={{ item }}/tcp
+    with_items: '{{ firewalld.ports }}'
+
+  - name: Set the default zone and reload firewalld
+    shell:  |
+      firewall-cmd --set-default-zone={{ firewalld.zone }}
+      firewall-cmd --reload

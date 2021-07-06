@@ -1,0 +1,20 @@
+---
+  - name: Remove previous server definitions.
+    lineinfile:
+      dest:   '{{ baseDirectory }}/{{ softwareBinary }}/conf/zoo.{{ zookeeper_id }}.cfg'
+      regexp: '^server.'
+      state:  absent
+
+  - name:  Get the Zookeeper hosts.
+    local_action:
+      module:  shell \
+        cat  inventory_files/{{ serverEnv }}.ini  \
+        |sed -n '/\[zookeeper\]/,$p'  \
+        |sed 1d  \
+        |sed -n '/\[.*/q;p'  \
+        |sed -e "s/{{ inventory_hostname }}/0.0.0.0/g"  \
+        |awk '{server=$1; id=$0; gsub(".*zookeeper_id=", "", id); gsub(" .*", "", id); print "server."id"="server":{{ portRange }}";}'
+    register:  zookeeperServers
+
+  - name:  Add zookeeper.connect property to server properties
+    shell:  echo "{{ zookeeperServers.stdout }}" >> {{ baseDirectory }}/{{ softwareBinary }}/conf/zoo.{{ zookeeper_id }}.cfg

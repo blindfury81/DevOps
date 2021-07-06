@@ -1,0 +1,41 @@
+---
+  - name:  Backup the files.
+    shell:  cp -p "{{ item.fileName }}" "{{ item.fileName }}.`date +%Y-%m-%d\@%H:%M:%S`~" || true
+    with_items:
+    -  "{{ propertyFiles }}"
+
+  - name:  Create files from remote source
+    copy:
+      src:         "{{ item.copyFrom }}"
+      dest:        "{{ item.fileName }}"
+      remote_src:  true
+    with_items:
+    -  "{{ propertyFiles }}"
+    when:  item.copyFrom is defined
+
+  - name:  Create files from template
+    template:
+      src:         "{{ softwareSelection }}/{{ templateName }}"
+      dest:        "{{ item.fileName }}"
+    with_items:
+    -  "{{ propertyFiles }}"
+    when:  item.templateName is defined
+
+  - name:  Update the Value
+    lineinfile:
+      path:     '{{ item.0.fileName }}'
+      regexp:   '^{{ item.1.option }}='
+      line:     '{{ item.1.option }}={{ item.1.value }}'
+      state:    present
+    with_subelements:
+    -  "{{ propertyFiles }}"
+    -  Values
+
+  - name:  Determine if this software has a special task.
+    local_action:
+      module:  stat
+      path:    "roles/propertiesUpdate/tasks/{{ softwareSelection }}.yml"
+    register:  specialTasks
+
+  - include_tasks:  "{{ softwareSelection }}.yml"
+    when:  specialTasks.stat.exists

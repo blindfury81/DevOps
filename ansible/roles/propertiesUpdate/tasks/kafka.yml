@@ -1,0 +1,19 @@
+---
+  - name:  Get the Zookeeper hosts.
+    local_action:
+      module:  shell \
+        cat  inventory_files/{{ serverEnv }}.ini  \
+        |sed -n '/\[zookeeper\]/,$p'  \
+        |sed 1d  \
+        |sed -n '/\[.*/q;p'  \
+        |sort -u  \
+        |awk '{ORS=","; print $1":{{ zookeeperPort }}";}'  \
+        |rev | sed 's/\,//' | rev
+    register:  zookeeperConnect
+
+  - name:  Add zookeeper.connect property to server properties
+    lineinfile:
+      path:    '{{ baseDirectory }}/{{ softwareBinary }}/config/server.{{ kafka_id }}.properties'
+      regexp:  '^zookeeper.connect='
+      line:    'zookeeper.connect={{ zookeeperConnect.stdout }}'
+      state:   present

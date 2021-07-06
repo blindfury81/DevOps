@@ -1,0 +1,88 @@
+---
+softwareDescription:  'Apache Zookeeper'
+owner:            'kafka'
+group:            'kafka'
+
+downloadUrl:      'http://mirrors.gigenet.com/apache/zookeeper/zookeeper-3.7.0/apache-zookeeper-3.7.0-bin.tar.gz'
+softwareArchive:  "{{ downloadUrl | regex_replace('.*/', '') }}"
+softwareBinary:   "{{ softwareArchive | regex_replace('.tar.gz', '') | regex_replace('.tgz', '') }}"
+useProxy:         true
+baseDirectory:    '/opt'
+
+listenerPort:   '2181'
+portRange: '2888:3888'
+kafkaPort:  '9093'
+
+##################################
+##  Directories to be created.  ##
+newDirectories:
+- directoryName:  '/data/zookeeper'
+  owner:  '{{ owner }}'
+  group:  '{{ group }}'
+  mode:   '0750'
+- directoryName:  '/var/log/zookeeper'
+  owner:  '{{ owner }}'
+  group:  '{{ group }}'
+  mode:   '0750'
+- directoryName:  '/var/ssl/private'
+  owner:  '{{ owner }}'
+  group:  '{{ group }}'
+  mode:   '0750'
+
+##  FIles to be copied from local server to destination.  ##
+copyFiles:
+- src:    '../security/ssl/fakeKeystore.jks'
+  dest:   '/var/ssl/private/client.truststore.jks'
+  owner:  '{{ owner }}'
+  group:  '{{ group }}'
+  mode:   '0600'
+
+#######################################
+##  firewalld service file options.  ##
+firewalld:
+  zone:       'work'
+  shortDesc:  '{{ softwareDescription }}'
+  longDesc:   '{{ softwareDescription }}'
+  ports:
+  -  '{{ listenerPort }}'
+
+####################################
+##  systemd service file options. ##
+systemd:
+  serviceName:  '{{ softwareSelection }}.{{ zookeeper_id }}.service'
+  sections:
+  - section: 'Unit'
+    values:
+    - option: 'Description'
+      value:  '{{ softwareDescription }}'
+  - section: 'Service'
+    values:
+    - option: 'User'
+      value:  '{{ owner }}'
+    - option: 'Group'
+      value:  '{{ group }}'
+    - option: 'ExecStart'
+      value:  '{{ baseDirectory }}/{{ softwareSelection }}/bin/zkServer.sh start {{ baseDirectory }}/{{ softwareSelection }}/conf/zoo.{{ zookeeper_id }}.cfg'
+    - option: 'ExecStop'
+      value:  '{{ baseDirectory }}/{{ softwareSelection }}/bin/zkServer.sh stop {{ baseDirectory }}/{{ softwareSelection }}/conf/zoo.{{ zookeeper_id }}.cfg'
+  - section: 'Install'
+    values:
+    - option: 'Alias'
+      value:  '{{ softwareSelection }}.{{ zookeeper_id }}'
+
+#####################################
+##  Property Files to be updated.  ##
+propertyFiles:
+- fileName:  '{{ baseDirectory }}/{{ softwareBinary }}/conf/zoo.{{ zookeeper_id }}.cfg'
+  copyFrom:  '{{ baseDirectory }}/{{ softwareBinary }}/conf/zoo_sample.cfg'
+  Values:
+  - option:  'initLimit'
+    value:  '5'
+  - option:  'syncLimit'
+    value:  '2'
+  - option:  'dataDir'
+    value:  '/data/zookeeper'
+  - option:  'clientPort'
+    value:  '{{ listenerPort }}'
+  - option:  '    ZOO_LOG_DIR'
+    value:  '/var/log/zookeeper'

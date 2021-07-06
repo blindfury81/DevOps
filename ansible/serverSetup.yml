@@ -1,0 +1,46 @@
+---
+  - name: Perform the initial Server Setup
+    vars_files:
+    - group_vars/{{ serverEnv }}_access.yml
+    - group_vars/{{ serverEnv }}_{{ softwareSelection }}.yml
+    hosts: "{{ softwareSelection }}"
+    gather_facts:  yes
+    become:        yes
+    become_user:   root
+    roles:
+    - serverAccess
+    - hostsUpdate
+    - role:  firewallService
+      when:  firewalld is defined
+    - role:  systemdSetup
+      when:  systemd is defined
+
+  - name:  Download the requested software
+    vars_files:
+    - group_vars/env.yml
+    - group_vars/{{ serverEnv }}_{{ softwareSelection }}.yml
+    environment:
+      http_proxy:   '{{ httpProxy }}'
+    hosts:         localhost
+    gather_facts:  true
+    become:        true
+    become_user:   root
+    roles:
+    - softwareDownload
+
+  - name:  Install and Configure the selected software
+    vars_files:
+    - group_vars/{{ serverEnv }}_{{ softwareSelection }}.yml
+    hosts: "{{ softwareSelection }}"
+    gather_facts:  true
+    become:        true
+    roles:
+    - softwareInstall
+    - role:  directoryCreate
+      when:  newDirectories is defined
+    - role:  copyFiles
+      when:  copyFiles is defined
+    - role:  propertiesUpdate
+      when:  propertyFiles is defined
+    - role:  xmlUpdate
+      when:  xmlFiles is defined

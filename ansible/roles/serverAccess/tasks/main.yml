@@ -1,0 +1,56 @@
+---
+  - name:  'Backup the /etc/security/access.conf file.'
+    shell:  cp -p /etc/security/access.conf /etc/security/access.conf.`date +%Y-%m-%d\@%H:%M:%S`~
+
+  - name:  Backup the /etc/sudoers file
+    shell:  cp -p /etc/sudoers /etc/sudoers.`date +%Y-%m-%d\@%H:%M:%S`~
+
+  - name:  Add groups to the /etc/security/access.conf file.
+    lineinfile:
+      dest:     /etc/security/access.conf
+      regexp:   '{{ item }}:'
+      line:     '+:@{{ item }}:ALL'
+      state:    present
+    with_items:  "{{ netgroups }}"
+
+  - name:  Add groups to the /etc/sudoers file.
+    lineinfile:
+      dest:     /etc/sudoers
+      regexp:    '^\+{{ item }} '
+      line:      '+{{ item }}  ALL=(ALL) NOPASSWD:ALL'
+      state:     present
+      validate:  '/usr/sbin/visudo -cf %s'
+    with_items:  "{{ netgroups }}"
+
+  - name:  Create the Owner's group.
+    group:
+      name:    '{{ group }}'
+      state:   present
+
+  - name: Create the Owner Account.
+    user:
+      name:     '{{ owner }}'
+      group:    '{{ group }}'
+      state:    present
+
+  - name:  Allow password-less sudo for the owner account.
+    lineinfile:
+      dest:     /etc/sudoers
+      regexp:   '^{{ owner }} '
+      line:     '{{ owner }}  ALL=(ALL) NOPASSWD:ALL'
+      state:    present
+      validate: '/usr/sbin/visudo -cf %s'
+
+  - name: Determine if a public RSA Key exists.
+    local_action:
+      module:  stat
+      path: ../security/ssh/id_rsa.pub
+    register: ssh_key
+
+  - name:  Add the RSA Key to the owner's authorized keys.
+    become_user:  "{{ owner }}"
+    authorized_key:
+      user:   "{{ owner }}"
+      state:  present
+      key:    "{{ lookup('file', '../security/ssh/id_rsa.pub') }}"
+    when:  ssh_key.stat.exists

@@ -1,0 +1,108 @@
+---
+softwareDescription:  'Apache Kafka'
+owner:            'kafka'
+group:            'kafka'
+
+downloadUrl:      'http://mirrors.gigenet.com/apache/kafka/2.8.0/kafka_2.12-2.8.0.tgz'
+softwareArchive:  "{{ downloadUrl | regex_replace('.*/', '') }}"
+softwareBinary:   "{{ softwareArchive | regex_replace('.tar.gz', '') | regex_replace('.tgz', '') }}"
+useProxy:         true
+baseDirectory:    '/opt'
+
+listenerPort:   '9093'
+zookeeperPort:  '2181'
+
+##################################
+##  Directories to be created.  ##
+newDirectories:
+- directoryName:  '/var/log/kafka'
+  owner:  '{{ owner }}'
+  group:  '{{ group }}'
+  mode:   '0750'
+- directoryName:  '/var/ssl/private'
+  owner:  '{{ owner }}'
+  group:  '{{ group }}'
+  mode:   '0750'
+
+##  FIles to be copied from local server to destination.  ##
+copyFiles:
+- src:    '../security/ssl/fakeKeystore.jks'
+  dest:   '/var/ssl/private/client.truststore.jks'
+  owner:  '{{ owner }}'
+  group:  '{{ group }}'
+  mode:   '0600'
+
+#######################################
+##  firewalld service file options.  ##
+firewalld:
+  zone:       'work'
+  shortDesc:  '{{ softwareDescription }}'
+  longDesc:   '{{ softwareDescription }}'
+  ports:
+  -  '9092'
+  -  '9093'
+
+####################################
+##  systemd service file options. ##
+systemd:
+  serviceName:  '{{ softwareSelection }}.{{ kafka_id }}.service'
+  sections:
+  - section: 'Unit'
+    values:
+    - option: 'Description'
+      value:  '{{ softwareDescription }}'
+  - section: 'Service'
+    values:
+    - option: 'User'
+      value:  '{{ owner }}'
+    - option: 'Group'
+      value:  '{{ group }}'
+    - option: 'ExecStart'
+      value:  '{{ baseDirectory }}/{{ softwareSelection }}/bin/kafka-server-start.sh {{ baseDirectory }}/{{ softwareSelection }}/config/server.{{ kafka_id }}.properties'
+  - section: 'Install'
+    values:
+    - option: 'Alias'
+      value:  '{{ softwareSelection }}.{{ kafka_id }}'
+
+#####################################
+##  Property Files to be updated.  ##
+propertyFiles:
+- fileName:  '{{ baseDirectory }}/{{ softwareBinary }}/config/server.{{ kafka_id }}.properties'
+  copyFrom:  '{{ baseDirectory }}/{{ softwareBinary }}/config/server.properties'
+  Values:
+  - option:  'broker.id'
+    value:     '{{ kafka_id }}'
+  - option:    'listeners'
+    value:    'SSL://:{{ listenerPort }}'
+  - option:  kafka.log.dir
+    value:  '/data/kafka-logs'
+  - option:  'kafka.logging.dir'
+    value:  '/var/log/kafka'
+  - option:  'ssl.client.auth'
+    value:  'required'
+  - option:  'ssl.truststore.location'
+    value:  '/var/ssl/private'
+  - option:  'ssl.truststore.file'
+    value:  'client.truststore.jks'
+  - option:  'ssl.truststore.password'
+    value:  'thisPassword'
+  - option:  'ssl.keystore.location'
+    value:  '/var/ssl/private'
+  - option:  'ssl.keystore.file'
+    value:  'client.keystore.jks'
+  - option:  'ssl.keystore.password'
+    value:  'thisPassword'
+  - option:  'ssl.key.password'
+    value:  'keystorePassword'
+  - option:  'security.inter.broker.protocol'
+    value:  'SSL'
+  - option:  'auto.create.topics'
+    value:  'false'
+  - option:  'allow.everyone.if.no.acl.found'
+    value:  'true'
+  - option:  'authorizer.class.name'
+    value:  'kafka.security.auth.SimpleAclAuthorizer'
+  - option:  'group.initial.rebalance.delay'
+    value:  '3000'
+  - option:  'zookeeper.connection.timeout'
+    value:  '6000'

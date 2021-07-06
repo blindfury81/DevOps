@@ -1,0 +1,16 @@
+---
+  - name:  Create the systemd service file.
+    template:
+      src:   generic.service
+      dest:  '/usr/lib/systemd/system/{{ systemd.serviceName }}'
+      mode:  0600
+
+  - name:  Update the service file.
+    ini_file:
+      path:     '/usr/lib/systemd/system/{{ systemd.serviceName }}'
+      section:  '{{ item.0.section }}'
+      option:   '{{ item.1.option }}'
+      value:    '{{ item.1.value }}'
+    with_subelements:
+    - "{{ systemd.sections }}"
+    - values

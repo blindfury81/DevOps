@@ -1,0 +1,19 @@
+---
+  - name:  Create the software repo directory
+    file:
+      path:   /opt/swDepot
+      state:  directory
+      mode:   0777
+
+  - name: Determine if the requested software is already available.
+    stat:
+      path: /opt/swDepot/{{ softwareArchive }}
+    register: swArchive
+
+  - name: Download the software
+    get_url:
+      url:   '{{ downloadUrl }}'
+      dest:  /opt/swDepot
+      mode:   0666
+      use_proxy:  '{{ useProxy }}'
+    when:  not swArchive.stat.exists
