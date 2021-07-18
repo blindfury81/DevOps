@@ -1,4 +1,4 @@
 ---
 netgroups:
-- devops_admins
-- kafka_team
+- a2a_admins
+- applint

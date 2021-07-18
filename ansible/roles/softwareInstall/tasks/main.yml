@@ -15,13 +15,3 @@
 
   - name: Set folder permissions on the software root directory.
     shell:  chown {{ owner }}:{{ group }} {{ baseDirectory }}/{{ softwareBinary }}
-
-  - name:  Update the software link.
-    file:
-      src:   "{{ baseDirectory }}/{{ softwareBinary }}"
-      dest:  "{{ baseDirectory }}/{{ softwareSelection }}"
-      state: link
-      owner: '{{ owner }}'
-      group: '{{ group }}'
-      mode: '0750'
-      remote_src: true

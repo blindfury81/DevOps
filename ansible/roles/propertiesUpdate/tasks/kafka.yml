@@ -7,7 +7,7 @@
         |sed 1d  \
         |sed -n '/\[.*/q;p'  \
         |sort -u  \
-        |awk '{ORS=","; print $1":{{ zookeeperPort }}";}'  \
+        |awk '{ORS=","; port=$0; gsub(".*zookeeper_port=", "", port); gsub(" .*", "", port); print $1":"port;}'  \
         |rev | sed 's/\,//' | rev
     register:  zookeeperConnect
 

@@ -1,0 +1,11 @@
+---
+  - name:  Restart the software
+    vars_files:
+    - group_vars/{{ serverEnv }}_{{ softwareSelection }}.yml
+    hosts: "{{ softwareSelection }}"
+    gather_facts:  yes
+    become:        yes
+    become_user:   root
+    serial:  1
+    roles:
+    - systemdRestart

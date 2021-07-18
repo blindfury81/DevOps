@@ -1,0 +1,22 @@
+---
+  - name:  Update the software link.
+    file:
+      src:   "{{ baseDirectory }}/{{ softwareBinary }}"
+      dest:  "{{ baseDirectory }}/{{ softwareSelection }}"
+      state: link
+      owner: '{{ owner }}'
+      group: '{{ group }}'
+      mode: '0750'
+      remote_src: true
+
+  - name:  Restart the software
+    systemd:
+      name:          '{{  systemd.serviceName }}'
+      state:         restarted
+      daemon_reload: yes
+
+  - name:  Wait for the listener port to become available
+    wait_for:
+      port:   '{{ systemd.listenerPort }}'
+      delay:  3
+    when:  systemd.listenerPort is defined

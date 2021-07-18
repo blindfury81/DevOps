@@ -2,6 +2,7 @@
 softwareDescription:  'Apache Tomcat'
 owner:            'tomcat'
 group:            'tomcat'
+tomcatPort:  '8080'
 
 downloadUrl:      'http://mirror.nodesdirect.com/apache/tomcat/tomcat-8/v8.5.68/bin/apache-tomcat-8.5.68.tar.gz'
 softwareArchive:  "{{ downloadUrl | regex_replace('.*/', '') }}"
@@ -16,13 +17,14 @@ firewalld:
   shortDesc:  '{{ softwareDescription }}'
   longDesc:   '{{ softwareDescription }}'
   ports:
-  -  '8080'
+  -  '{{ tomcatPort }}'
   -  '8084'
 
 ####################################
 ##  systemd service file options. ##
 systemd:
   serviceName:  '{{ softwareSelection }}.service'
+  listenerPort:  '{{ tomcatPort }}'
   sections:
   - section: 'Unit'
     values:

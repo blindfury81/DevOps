@@ -9,9 +9,6 @@ softwareBinary:   "{{ softwareArchive | regex_replace('.tar.gz', '') | regex_rep
 useProxy:         true
 baseDirectory:    '/opt'
 
-listenerPort:   '9093'
-zookeeperPort:  '2181'
-
 ##################################
 ##  Directories to be created.  ##
 newDirectories:
@@ -19,7 +16,7 @@ newDirectories:
   owner:  '{{ owner }}'
   group:  '{{ group }}'
   mode:   '0750'
-- directoryName:  '/var/ssl/private'
+- directoryName:  '/var/private/ssl'
   owner:  '{{ owner }}'
   group:  '{{ group }}'
   mode:   '0750'
@@ -27,7 +24,7 @@ newDirectories:
 ##  FIles to be copied from local server to destination.  ##
 copyFiles:
 - src:    '../security/ssl/fakeKeystore.jks'
-  dest:   '/var/ssl/private/client.truststore.jks'
+  dest:   '/var/private/ssl/client.truststore.jks'
   owner:  '{{ owner }}'
   group:  '{{ group }}'
   mode:   '0600'
@@ -39,13 +36,13 @@ firewalld:
   shortDesc:  '{{ softwareDescription }}'
   longDesc:   '{{ softwareDescription }}'
   ports:
-  -  '9092'
-  -  '9093'
+  -  '{{ kafka_port }}'
 
 ####################################
 ##  systemd service file options. ##
 systemd:
   serviceName:  '{{ softwareSelection }}.{{ kafka_id }}.service'
+  listenerPort:  '{{  zookeeper_port }}'
   sections:
   - section: 'Unit'
     values:
@@ -73,21 +70,21 @@ propertyFiles:
   - option:  'broker.id'
     value:     '{{ kafka_id }}'
   - option:    'listeners'
-    value:    'SSL://:{{ listenerPort }}'
-  - option:  kafka.log.dir
-    value:  '/data/kafka-logs'
+    value:    'SSL://:{{ kafka_port }}'
+  - option:  'kafka.log.dirs'
+    value:  '/mnt/kafka-{{ kafka_id }}-log'
   - option:  'kafka.logging.dir'
     value:  '/var/log/kafka'
   - option:  'ssl.client.auth'
     value:  'required'
   - option:  'ssl.truststore.location'
-    value:  '/var/ssl/private'
+    value:  '/var/private/ssl/truststore.jks'
   - option:  'ssl.truststore.file'
     value:  'client.truststore.jks'
   - option:  'ssl.truststore.password'
-    value:  'thisPassword'
+    value:   'thisPassword'
   - option:  'ssl.keystore.location'
-    value:  '/var/ssl/private'
+    value:  '/var/private/ssl/keystore.jks'
   - option:  'ssl.keystore.file'
     value:  'client.keystore.jks'
   - option:  'ssl.keystore.password'
@@ -104,5 +101,13 @@ propertyFiles:
     value:  'kafka.security.auth.SimpleAclAuthorizer'
   - option:  'group.initial.rebalance.delay'
     value:  '3000'
-  - option:  'zookeeper.connection.timeout'
-    value:  '6000'
+  - option:  'zookeeper.connection.timeout.ms'
+    value:   '6000'
+  - option:  'group.initial.rebalance.delay.ms'
+    value:   '3000'
+  - option:  'auto.create.topics.enable'
+    value:   'false'
+  - option:  'ssl.endpoint.identification.algorithm'
+    value:   ''
+  - option:  'super.users'
+    value:   '=User:CN=kafka-consumer,OU=devopss,Oyourcompany,C=US'
