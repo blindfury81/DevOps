@@ -1,0 +1,8 @@
+---
+certAuth:
+  country:             'US'
+  organization:      'your-company'
+  organizationUnit:  'Certificate Authority - Root'
+  commonName:        'Root CA'
+  certPassword:  'cert-pass'
+trustStorePass:  'ts-password'

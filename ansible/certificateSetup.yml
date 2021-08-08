@@ -1,0 +1,7 @@
+---
+  - name: Create the Root Certificate Authority and Trust Store.
+    vars_files:
+    - group_vars/{{ serverEnv }}_certAuth.yml
+    hosts: localhost
+    roles:
+    - certAuthCreate

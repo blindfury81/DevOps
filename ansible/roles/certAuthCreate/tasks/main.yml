@@ -1,0 +1,37 @@
+---
+  - name:  Remove the current trust store.
+    file:
+      path:    ../security/ssl/{{ serverEnv }}.truststore.jks
+      state:   absent
+
+  - name: Determine if the private key already exists.
+    stat:
+      path:  ../security/ssl/{{ serverEnv }}-root-PK.key
+    register: caPrivateKey
+
+  - name:  Create the Certificate Authority Private Key.
+    openssl_privatekey:
+      path:    ../security/ssl/{{ serverEnv }}-root-PK.key
+      size:    4096
+      state:   present
+    when:  not caPrivateKey.stat.exists
+
+  - name:  Create the CA Private Key Signature Request.
+    shell:  |
+      rm -f ../security/ssl/{{ serverEnv }}-root-CA.crt  || true
+      openssl req -nodes -x509  \
+        -key ../security/ssl/{{ serverEnv }}-root-PK.key  \
+        -out ../security/ssl/{{ serverEnv }}-root-CA.crt  \
+        -days 3650  \
+        -subj "/C={{ certAuth.country }}/O={{ certAuth.organization }}/OU={{ certAuth.organizationUnit }}/CN={{ certAuth.commonName }}"
+
+  - name:  Trust Store.
+    shell:  |
+      keytool  -importcert  -noprompt  \
+        -keyalg RSA  \
+        -srcstoretype PKCS12  \
+        -keystore  ../security/ssl/{{ serverEnv }}.truststore.jks  \
+        -storepass  {{ trustStorePass }}  \
+        -alias '{{ serverEnv }}-RootCA'  \
+        -file ../security/ssl/{{ serverEnv }}-root-CA.crt
+
